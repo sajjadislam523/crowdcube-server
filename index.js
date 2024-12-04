@@ -89,5 +89,24 @@ async function run() {
         res.status(200).json({ message: 'Campaign deleted successfully' });
     });
 
+    // Contribute to a campaign
+    app.post('/campaigns/:id/contribute', async (req, res) => {
+        const { id } = req.params;
+        const { amount, contributor } = req.body;
+        const campaign = await campaignCollection.findOne({ _id: new ObjectId(id) });
+        const updatedCampaign = {
+            ...campaign,
+            raised: campaign.raised + amount,
+            contributors: campaign.contributors.includes(contributor)
+                ? campaign.contributors
+                : [...campaign.contributors, contributor],
+        };
+        await campaignCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updatedCampaign }
+        );
+        res.status(200).json(updatedCampaign);
+    });
+
 }
 run().catch(console.dir);
