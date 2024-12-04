@@ -108,5 +108,11 @@ async function run() {
         res.status(200).json(updatedCampaign);
     });
 
+    // Get all users
+    app.get('/users', async (req, res) => {
+        const users = await userCollection.find().toArray();
+        res.status(200).json(users);
+    });
+
 }
 run().catch(console.dir);
