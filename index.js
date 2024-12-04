@@ -82,5 +82,12 @@ async function run() {
         res.status(200).json(result.value);
     });
 
+    // Delete a campaign by ID
+    app.delete('/campaigns/:id', async (req, res) => {
+        const { id } = req.params;
+        await campaignCollection.deleteOne({ _id: new ObjectId(id) });
+        res.status(200).json({ message: 'Campaign deleted successfully' });
+    });
+
 }
 run().catch(console.dir);
