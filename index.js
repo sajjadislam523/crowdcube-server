@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
@@ -49,6 +49,15 @@ async function run() {
         res.send(result);
     });
 
+    // Get single campaign details
+
+    app.get('/campaigns/:id', async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) }
+        const result = await campaignCollection.findOne(query)
+        res.send(result);
+    })
+
     // Create a new campaign
     app.post('/campaigns', async (req, res) => {
         const { title, thumbnail, type, description, minimumDonation, expiredDate, creator } = req.body;
@@ -90,7 +99,7 @@ async function run() {
     });
 
     // Contribute to a campaign
-    app.post('/campaigns/:id/contribute', async (req, res) => {
+    app.post('/campaigns/:id/donate', async (req, res) => {
         const { id } = req.params;
         const { amount, contributor } = req.body;
         const campaign = await campaignCollection.findOne({ _id: new ObjectId(id) });
