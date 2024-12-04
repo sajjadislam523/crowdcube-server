@@ -114,5 +114,12 @@ async function run() {
         res.status(200).json(users);
     });
 
+    // Create a new user
+    app.post('/users', async (req, res) => {
+        const newUser = req.body;
+        const result = await userCollection.insertOne(newUser);
+        res.send(result);
+    });
+
 }
 run().catch(console.dir);
