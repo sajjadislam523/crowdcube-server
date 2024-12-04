@@ -70,5 +70,17 @@ async function run() {
         res.send(result);
     });
 
+    // Update a campaign by ID
+    app.put('/campaigns/:id', async (req, res) => {
+        const { id } = req.params;
+        const updates = req.body;
+        const result = await campaignCollection.findOneAndUpdate(
+            { _id: new ObjectId(id) },
+            { $set: updates },
+            { returnDocument: 'after' }
+        );
+        res.status(200).json(result.value);
+    });
+
 }
 run().catch(console.dir);
