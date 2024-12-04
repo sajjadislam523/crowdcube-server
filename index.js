@@ -102,20 +102,38 @@ async function run() {
     app.post('/campaigns/:id/donate', async (req, res) => {
         const { id } = req.params;
         const { amount, contributor } = req.body;
-        const campaign = await campaignCollection.findOne({ _id: new ObjectId(id) });
-        const updatedCampaign = {
-            ...campaign,
-            raised: campaign.raised + amount,
-            contributors: campaign.contributors.includes(contributor)
-                ? campaign.contributors
-                : [...campaign.contributors, contributor],
-        };
-        await campaignCollection.updateOne(
-            { _id: new ObjectId(id) },
-            { $set: updatedCampaign }
-        );
-        res.status(200).json(updatedCampaign);
+
+        if (!amount || !contributor) {
+            return res.status(400).json({ error: "Amount and contributor are required." });
+        }
+
+        try {
+            const campaign = await campaignCollection.findOne({ _id: new ObjectId(id) });
+
+            if (!campaign) {
+                return res.status(404).json({ error: "Campaign not found." });
+            }
+
+            const updatedCampaign = {
+                ...campaign,
+                raised: campaign.raised + parseFloat(amount),
+                contributors: campaign.contributors.includes(contributor)
+                    ? campaign.contributors
+                    : [...campaign.contributors, contributor],
+            };
+
+            await campaignCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updatedCampaign }
+            );
+
+            res.status(200).json(updatedCampaign);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: "Failed to process donation." });
+        }
     });
+
 
     // Get all users
     app.get('/users', async (req, res) => {
