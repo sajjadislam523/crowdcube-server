@@ -49,7 +49,26 @@ async function run() {
         res.send(result);
     });
 
+    // Create a new campaign
+    app.post('/campaigns', async (req, res) => {
+        const { title, thumbnail, type, description, minimumDonation, expiredDate, creator } = req.body;
+        const newCampaign = {
+            title,
+            thumbnail,
+            type,
+            description,
+            minimumDonation,
+            expiredDate: new Date(expiredDate),
+            creator,
+            goal: 0,
+            raised: 0,
+            contributors: [],
+            createdAt: new Date(),
+        };
 
+        const result = await campaignCollection.insertOne(newCampaign);
+        res.send(result);
+    });
 
 }
 run().catch(console.dir);
