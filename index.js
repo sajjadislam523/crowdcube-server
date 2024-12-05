@@ -89,21 +89,19 @@ async function run() {
 
         // Update a campaign by ID
         app.put('/campaigns/:id', async (req, res) => {
-            try {
-                const { id } = req.params;
-                const updates = req.body;
-                const result = await campaignCollection.findOneAndUpdate(
-                    { _id: new ObjectId(id) },
-                    { $set: updates },
-                    { returnDocument: 'after' }
-                );
-                if (result.value) {
-                    res.status(200).json(result.value);
-                } else {
-                    res.status(404).json({ error: "Campaign not found." });
-                }
-            } catch (error) {
-                res.status(500).json({ error: "Failed to update campaign." });
+            const { id } = req.params;
+            const updates = req.body;
+
+            const result = await campaignCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updates }
+            );
+
+            if (result.modifiedCount === 1) {
+                const updatedCampaign = await campaignCollection.findOne({ _id: new ObjectId(id) });
+                res.status(200).json(updatedCampaign);
+            } else {
+                res.status(200).json({ message: "No changes were made to the campaign." });
             }
         });
 
