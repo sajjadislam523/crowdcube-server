@@ -35,6 +35,7 @@ async function run() {
 
         const campaignCollection = client.db("crowdcubeDB").collection("campaigns");
         const userCollection = client.db("crowdcubeDB").collection("users");
+        const donationCollection = client.db("crowdcubeDB").collection("donations");
 
         // Get all campaigns
         app.get('/campaigns', async (req, res) => {
@@ -120,40 +121,77 @@ async function run() {
             }
         });
 
-        // Contribute to a campaign
-        app.post('/campaigns/:id/donate', async (req, res) => {
+        app.post('/donate', async (req, res) => {
             try {
-                const { id } = req.params;
-                const { amount, contributor } = req.body;
+                const { campaignId, campaignTitle, contributorEmail, contributorName, amount } = req.body;
 
-                if (!amount || !contributor) {
-                    return res.status(400).json({ error: "Amount and contributor are required." });
-                }
+                const donationRecord = {
+                    campaignId,
+                    campaignTitle,
+                    contributorEmail,
+                    contributorName,
+                    amount,
+                    date: new Date(),
+                };
 
-                const campaign = await campaignCollection.findOne({ _id: new ObjectId(id) });
+                await donationCollection.insertOne(donationRecord);
+
+                const campaign = await campaignCollection.findOne({ _id: new ObjectId(campaignId) });
 
                 if (!campaign) {
                     return res.status(404).json({ error: "Campaign not found." });
                 }
 
-                const updatedCampaign = {
-                    ...campaign,
-                    raised: campaign.raised + parseFloat(amount),
-                    contributors: campaign.contributors.includes(contributor)
-                        ? campaign.contributors
-                        : [...campaign.contributors, contributor],
-                };
+                const updatedRaised = campaign.raised + amount;
 
                 await campaignCollection.updateOne(
-                    { _id: new ObjectId(id) },
-                    { $set: updatedCampaign }
+                    { _id: new ObjectId(campaignId) },
+                    { $set: { raised: updatedRaised } }
                 );
 
-                res.status(200).json(updatedCampaign);
+                const updatedCampaign = await campaignCollection.findOne({ _id: new ObjectId(campaignId) });
+
+                res.status(200).json({
+                    message: "Donation recorded successfully.",
+                    donationRecord,
+                    updatedCampaign,
+                });
             } catch (error) {
-                res.status(500).json({ error: "Failed to process donation." });
+                console.error("Error recording donation:", error);
+                res.status(500).json({
+                    error: "Failed to record donation.",
+                    message: "An unexpected error occurred. Please try again later.",
+                });
             }
         });
+
+
+        app.get('/donations', async (req, res) => {
+            try {
+                const { email } = req.query;
+
+                if (!email) {
+                    return res.status(400).json({
+                        error: "Email query parameter is required.",
+                    });
+                }
+
+                const donations = await donationCollection
+                    .find({ contributorEmail: email })
+                    .toArray();
+
+                // Return a valid response structure
+                res.status(200).json(donations);
+            } catch (error) {
+                console.error("Error fetching donations:", error);
+                res.status(500).json({
+                    error: "Failed to fetch donations.",
+                    message: "An unexpected error occurred. Please try again later.",
+                });
+            }
+        });
+
+
 
         // Get all users
         app.get('/users', async (req, res) => {
@@ -168,7 +206,17 @@ async function run() {
         // Create a new user
         app.post('/users', async (req, res) => {
             try {
-                const newUser = req.body;
+                const { email, name, photo, password } = req.body;
+
+
+                const newUser = {
+                    email,
+                    name,
+                    photo,
+                    password,
+                    createdAt: new Date(),
+                };
+
                 const result = await userCollection.insertOne(newUser);
                 res.status(201).json(result);
             } catch (error) {
@@ -176,16 +224,6 @@ async function run() {
             }
         });
 
-        // Check the user email
-        app.get('/users/:email', async (req, res) => {
-            try {
-                const { email } = req.body;
-                const existingUser = await userCollection.findOne({ email });
-                res.status(200).json(!existingUser);
-            } catch (error) {
-                res.status(500).json({ error: "Failed to check email." });
-            }
-        });
 
     } catch (err) {
         console.error(err);
@@ -194,5 +232,3 @@ async function run() {
 }
 
 run().catch(console.dir);
-
-// Start the server
