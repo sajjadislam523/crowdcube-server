@@ -51,7 +51,7 @@ async function run() {
         // Get single campaign details
         app.get('/campaigns/:id', async (req, res) => {
             try {
-                const id = req.params.id;
+                const { id } = req.params;
                 const query = { _id: new ObjectId(id) };
                 const result = await campaignCollection.findOne(query);
                 if (result) {
@@ -123,32 +123,51 @@ async function run() {
 
         app.post('/donate', async (req, res) => {
             try {
-                const { campaignId, campaignTitle, contributorEmail, contributorName, amount } = req.body;
+                const { campaignId, amount, contributorEmail, contributorName } = req.body;
 
-                const donationRecord = {
-                    campaignId,
-                    campaignTitle,
-                    contributorEmail,
-                    contributorName,
-                    amount,
-                    date: new Date(),
-                };
+                // Ensure donation amount is a valid number
+                const donationAmount = parseFloat(amount);
+                if (isNaN(donationAmount) || donationAmount <= 0) {
+                    return res.status(400).json({ error: "Invalid donation amount." });
+                }
 
-                await donationCollection.insertOne(donationRecord);
-
+                // Fetch the campaign
                 const campaign = await campaignCollection.findOne({ _id: new ObjectId(campaignId) });
-
                 if (!campaign) {
                     return res.status(404).json({ error: "Campaign not found." });
                 }
 
-                const updatedRaised = campaign.raised + amount;
+                // Validate against the minimum donation amount
+                const minimumDonation = parseFloat(campaign.minimumDonation) || 0;
+                if (donationAmount < minimumDonation) {
+                    return res.status(400).json({
+                        error: `Donation amount must be at least $${minimumDonation}.`,
+                    });
+                }
+
+                // Create a donation record
+                const donationRecord = {
+                    campaignId,
+                    campaignTitle: campaign.title,
+                    contributorEmail,
+                    contributorName,
+                    amount: donationAmount,
+                    date: new Date(),
+                };
+
+                // Insert the donation record
+                await donationCollection.insertOne(donationRecord);
+
+                // Update the campaign's raised amount
+                const currentRaised = parseFloat(campaign.raised) || 0;
+                const updatedRaised = currentRaised + donationAmount;
 
                 await campaignCollection.updateOne(
                     { _id: new ObjectId(campaignId) },
                     { $set: { raised: updatedRaised } }
                 );
 
+                // Fetch the updated campaign
                 const updatedCampaign = await campaignCollection.findOne({ _id: new ObjectId(campaignId) });
 
                 res.status(200).json({
@@ -164,6 +183,8 @@ async function run() {
                 });
             }
         });
+
+
 
 
         app.get('/donations', async (req, res) => {
