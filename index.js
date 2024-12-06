@@ -125,27 +125,17 @@ async function run() {
             try {
                 const { campaignId, amount, contributorEmail, contributorName } = req.body;
 
-                // Ensure donation amount is a valid number
                 const donationAmount = parseFloat(amount);
                 if (isNaN(donationAmount) || donationAmount <= 0) {
                     return res.status(400).json({ error: "Invalid donation amount." });
                 }
 
-                // Fetch the campaign
                 const campaign = await campaignCollection.findOne({ _id: new ObjectId(campaignId) });
                 if (!campaign) {
                     return res.status(404).json({ error: "Campaign not found." });
                 }
 
-                // Validate against the minimum donation amount
-                const minimumDonation = parseFloat(campaign.minimumDonation) || 0;
-                if (donationAmount < minimumDonation) {
-                    return res.status(400).json({
-                        error: `Donation amount must be at least $${minimumDonation}.`,
-                    });
-                }
 
-                // Create a donation record
                 const donationRecord = {
                     campaignId,
                     campaignTitle: campaign.title,
@@ -155,10 +145,8 @@ async function run() {
                     date: new Date(),
                 };
 
-                // Insert the donation record
                 await donationCollection.insertOne(donationRecord);
 
-                // Update the campaign's raised amount
                 const currentRaised = parseFloat(campaign.raised) || 0;
                 const updatedRaised = currentRaised + donationAmount;
 
@@ -167,7 +155,6 @@ async function run() {
                     { $set: { raised: updatedRaised } }
                 );
 
-                // Fetch the updated campaign
                 const updatedCampaign = await campaignCollection.findOne({ _id: new ObjectId(campaignId) });
 
                 res.status(200).json({
@@ -185,8 +172,6 @@ async function run() {
         });
 
 
-
-
         app.get('/donations', async (req, res) => {
             try {
                 const { email } = req.query;
@@ -201,7 +186,6 @@ async function run() {
                     .find({ contributorEmail: email })
                     .toArray();
 
-                // Return a valid response structure
                 res.status(200).json(donations);
             } catch (error) {
                 console.error("Error fetching donations:", error);
@@ -227,13 +211,13 @@ async function run() {
         // Create a new user
         app.post('/users', async (req, res) => {
             try {
-                const { email, name, photo, password } = req.body;
+                const { email, name, photoURL, password } = req.body;
 
 
                 const newUser = {
                     email,
                     name,
-                    photo,
+                    photoURL,
                     password,
                     createdAt: new Date(),
                 };
