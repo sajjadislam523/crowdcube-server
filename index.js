@@ -67,7 +67,7 @@ async function run() {
         // Create a new campaign
         app.post('/campaigns', async (req, res) => {
             try {
-                const { title, thumbnail, type, description, minimumDonation, goal, raised, expiredDate, creator } = req.body;
+                const { title, thumbnail, type, description, minimumDonation, goal, raised, expiredDate, creator, userName } = req.body;
                 const newCampaign = {
                     title,
                     thumbnail,
@@ -76,6 +76,7 @@ async function run() {
                     minimumDonation: parseFloat(minimumDonation) || 0,
                     expiredDate: new Date(expiredDate),
                     creator,
+                    userName,
                     goal: parseFloat(goal) || 0,
                     raised: parseFloat(raised) || 0,
                     contributors: [],
