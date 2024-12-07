@@ -16,3 +16,4 @@ This is a Node.js-based REST API for a crowdfunding platform named _Crowdcube_. 
 -   **MongoDB**: NoSQL database for data storage.
 -   **dotenv**: For managing environment variables.
 -   **cors**: Middleware for handling cross-origin requests.
+-   **Firebase**: User authentication and authorization.
