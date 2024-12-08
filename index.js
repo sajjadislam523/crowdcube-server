@@ -158,15 +158,6 @@ async function run() {
             res.send(users);
         });
 
-
-        // Get email from user
-        app.get('/user/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email };
-            const result = await userCollection.findOne(query);
-            res.send(result);
-        })
-
         // Create a new user
         app.post('/users', async (req, res) => {
 
